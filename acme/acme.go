@@ -34,6 +34,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 	"net/http"
@@ -399,9 +400,12 @@ func (c *Client) GetAuthorization(ctx context.Context, url string) (*Authorizati
 	}
 	defer res.Body.Close()
 	var v wireAuthz
-	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
+
+	body, _ := io.ReadAll(res.Body)
+	if err := json.Unmarshal(body, &v); err != nil {
 		return nil, fmt.Errorf("acme: invalid response: %v", err)
 	}
+
 	return v.authorization(url), nil
 }
 
@@ -690,7 +694,7 @@ func (c *Client) addNonce(h http.Header) {
 }
 
 func (c *Client) fetchNonce(ctx context.Context, url string) (string, error) {
-	r, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
+	r, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return "", err
 	}

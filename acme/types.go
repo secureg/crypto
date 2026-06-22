@@ -536,6 +536,12 @@ type Challenge struct {
 	// The type of a non-nil value is *Error.
 	Error error
 
+	// SCG - RFC9447
+	TokenAuthority string
+
+	// SCG - RFC9447
+	TokenAuthType string
+
 	// Payload is the JSON-formatted payload that the client sends
 	// to the server to indicate it is ready to respond to the challenge.
 	// When unset, it defaults to an empty JSON object: {}.
@@ -549,21 +555,25 @@ type Challenge struct {
 
 // wireChallenge is ACME JSON challenge representation.
 type wireChallenge struct {
-	URL       string `json:"url"` // RFC
-	URI       string `json:"uri"` // pre-RFC
-	Type      string
-	Token     string
-	Status    string
-	Validated time.Time
-	Error     *wireError
+	URL            string `json:"url"` // RFC
+	URI            string `json:"uri"` // pre-RFC
+	Type           string
+	Token          string
+	Status         string
+	TokenAuthority string `json:"token-authority,omitempty"`
+	TokenAuthType  string `json:"tkauth-type,omitempty"`
+	Validated      time.Time
+	Error          *wireError
 }
 
 func (c *wireChallenge) challenge() *Challenge {
 	v := &Challenge{
-		URI:    c.URL,
-		Type:   c.Type,
-		Token:  c.Token,
-		Status: c.Status,
+		URI:            c.URL,
+		Type:           c.Type,
+		Token:          c.Token,
+		Status:         c.Status,
+		TokenAuthority: c.TokenAuthority,
+		TokenAuthType:  c.TokenAuthType,
 	}
 	if v.URI == "" {
 		v.URI = c.URI // c.URL was empty; use legacy

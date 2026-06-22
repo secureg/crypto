@@ -52,12 +52,12 @@ func (c *Client) registerRFC(ctx context.Context, acct *Account, prompt func(tos
 	}{
 		Contact: acct.Contact,
 	}
+
 	if c.dir.Terms != "" {
-		if prompt == nil {
-			return nil, errors.New("acme: missing Manager.Prompt to accept server's terms of service")
-		}
 		req.TermsAgreed = prompt(c.dir.Terms)
 	}
+	// SecureG's Boulder auto agree for ToS
+	req.TermsAgreed = true
 
 	// set 'externalAccountBinding' field if requested
 	if acct.ExternalAccountBinding != nil {
@@ -235,7 +235,7 @@ func (c *Client) AuthorizeOrder(ctx context.Context, id []AuthzID, opt ...OrderO
 	return responseOrder(res)
 }
 
-// GetOrder retrieves an order identified by the given URL.
+// GetOrder retrives an order identified by the given URL.
 // For orders created with AuthorizeOrder, the url value is Order.URI.
 //
 // If a caller needs to poll an order until its status is final,
@@ -309,9 +309,12 @@ func responseOrder(res *http.Response) (*Order, error) {
 		Finalize       string
 		Certificate    string
 	}
-	if err := json.NewDecoder(res.Body).Decode(&v); err != nil {
+
+	body, _ := io.ReadAll(res.Body)
+	if err := json.Unmarshal(body, &v); err != nil {
 		return nil, fmt.Errorf("acme: error reading order: %v", err)
 	}
+
 	o := &Order{
 		URI:         res.Header.Get("Location"),
 		Status:      v.Status,
